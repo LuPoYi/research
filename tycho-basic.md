@@ -64,3 +64,87 @@
   - 跨協議交易路徑優化
   - 模擬交換機會比較
   - 最佳交易策略執行
+
+---
+
+### REVM 是什麼？為什麼需要它？
+
+  REVM 核心概念
+
+  REVM (Rust Ethereum Virtual Machine) 是用 Rust 實現的高效能 Ethereum Virtual Machine，專注於速度和簡潔性。
+
+  為什麼 Solver 需要 REVM？
+
+  1. 速度優勢
+  - 比標準 EVM 快數倍
+  - 本地模擬無需網路延遲
+  - 毫秒級交易模擬
+
+  2. 離線模擬能力
+  傳統方式: Solver → RPC Node → 網路延遲 → 結果
+  REVM 方式: Solver → 本地模擬 → 即時結果
+
+  3. 狀態管理
+  - 可以任意修改合約狀態進行測試
+  - 模擬大額交易而不影響實際餘額
+  - 測試極端市場條件
+
+  實際應用場景
+
+  1. MEV 策略測試
+  // 模擬 arbitrage 機會
+  let result = revm.simulate_transaction(
+      swap_transaction,
+      modified_state  // 注入測試餘額
+  );
+
+  2. 協議風險評估
+  - 模擬大額提取對流動性池的影響
+  - 測試協議在極端條件下的表現
+  - 評估清算風險
+
+  3. 最佳路由計算
+  - 並行模擬多個交易路徑
+  - 計算最佳執行順序
+  - 預測 gas 成本
+
+### Native vs VM Indexing 詳細對比
+
+⏺ Native Simulation Indexing
+
+  特點：
+  - 提供結構化、解析過的協議資料
+  - 直接存儲交易曲線參數 (如 AMM 的 reserves、fee rates)
+  - 無需虛擬機器執行，計算速度極快
+
+  適用場景：
+  - 需要大量分析和比較不同協議
+  - 即時價格計算和路由優化
+  - 歷史資料分析和趨勢預測
+
+  資料結構範例：
+  {
+    "pool": "0x...",
+    "token0": "WETH",
+    "token1": "USDC",
+    "reserves": [1000, 3000000],
+    "fee": 0.003,
+    "timestamp": "2024-01-01T00:00:00Z"
+  }
+
+  VM Compatibility Indexing
+
+  特點：
+  - 追蹤完整合約狀態
+  - 可以執行任意合約函數
+  - 完全模擬鏈上環境
+
+  適用場景：
+  - 需要精確模擬複雜協議邏輯
+  - 測試新交易策略
+  - 處理非標準或創新協議
+
+  優勢：
+  - 100% 精確度，與鏈上結果完全一致
+  - 支援任意複雜度的合約互動
+  - 無網路延遲的本地模擬
